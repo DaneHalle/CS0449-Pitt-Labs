@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Lab 1: Thoth, SSH, and C</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/labs/lab1.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Lab 1: Thoth, SSH, and C
+		
+	</h1>
+
+	
+		<h3>
+			Finish by midnight, Sunday 1/13
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<h2 id="what-is-thoth">What is thoth?</h2>
+
+<p><a href="https://en.wikipedia.org/wiki/Thoth">thoth</a> is a computer in the CS building. It’s hooked up to Pitt’s network, but the CS department manages it and puts software on it useful for this and other courses.</p>
+
+<p>By logging into thoth remotely, you don’t have to worry about setting up a C compiler on your own computer.</p>
+
+<p><strong>ssh</strong> is a way of running commands on a remote machine. It’s like your command line, but the console is connected across the internet instead of to your own computer.</p>
+
+<p class="important">Later projects will also use features only available on thoth. <strong>So please don’t try to compile your projects on your local machine.</strong></p>
+
+<hr />
+
+<h2 id="1-getting-connected-and-set-up">1. Getting connected and set up</h2>
+
+<p class="good-important">Nothing will show up when you type your password. That’s normal.</p>
+
+<p class="good-important">When you log in, don’t worry about the “unauthorized access” message. You <em>are</em> supposed to be logging in. <em>You’re authorized ;)</em></p>
+
+<h3 id="windows-users">Windows users</h3>
+
+<p>You need to get an ssh client, <a href="https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html">like PuTTY</a> (use the 64-bit installer). Run it, and use <code class="highlighter-rouge">thoth.cs.pitt.edu</code> as the address.</p>
+
+<p>Say “Yes” to the certificate, give your username (lowercase) and password, and you’re in!</p>
+
+<h3 id="mac-users">Mac users</h3>
+
+<p>Open up Terminal (⌘+Space, type “terminal”, hit enter). Then run:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>ssh yourusername@thoth.cs.pitt.edu
+</code></pre></div></div>
+
+<p>Say “Yes” to the certificate, give your username (lowercase) and password, and you’re in!</p>
+
+<p class="important">If you can’t log in, please ask the TA for help. If you are sure you’re putting in your username in lowercase, and the right password, please email me and CC Dr. Khattab (<a href="mailto:skhattab@cs.pitt.edu">skhattab@cs.pitt.edu</a>). He’s the thoth administrator.</p>
+
+<hr />
+
+<h2 id="2-common-unix-commands">2. Common UNIX commands</h2>
+
+<p>Here’s a quick reference guide to refer back to.</p>
+
+<ul>
+  <li><code class="highlighter-rouge">pwd</code> – display the current directory</li>
+  <li><code class="highlighter-rouge">cd dirname</code> – change current directory to <code class="highlighter-rouge">dirname</code>
+    <ul>
+      <li><code class="highlighter-rouge">cd ..</code> moves up one directory</li>
+      <li><code class="highlighter-rouge">cd ~</code> goes to your home directory</li>
+      <li><code class="highlighter-rouge">cd -</code> toggles back and forth between the last two directories you were in</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">ls</code> – list all files/folders in current directory
+    <ul>
+      <li><code class="highlighter-rouge">ls dirname</code> will list files/folders in the directory <code class="highlighter-rouge">dirname</code></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">mv source dest</code> – move or rename a file
+    <ul>
+      <li><code class="highlighter-rouge">source</code> is the file you want to move/rename</li>
+      <li><code class="highlighter-rouge">dest</code> is the new place/name</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">cp source dest</code> - copy a file from <code class="highlighter-rouge">source</code> to <code class="highlighter-rouge">dest</code></li>
+  <li><code class="highlighter-rouge">mkdir name</code> - make a new directory named <code class="highlighter-rouge">name</code></li>
+  <li><code class="highlighter-rouge">touch filename</code> - make an empty file named <code class="highlighter-rouge">filename</code></li>
+  <li><code class="highlighter-rouge">cat filename</code> - display contents of text file <code class="highlighter-rouge">filename</code></li>
+  <li><code class="highlighter-rouge">less filename</code> - view contents of text file <code class="highlighter-rouge">filename</code> - good for longer files
+    <ul>
+      <li>press <code class="highlighter-rouge">q</code> to exit!</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">rm filename</code> - delete (“remove”) <code class="highlighter-rouge">filename</code></li>
+  <li><code class="highlighter-rouge">rmdir dirname</code> - delete an EMPTY directory named <code class="highlighter-rouge">dirname</code></li>
+</ul>
+
+<h2 id="where-are-we">Where are we?</h2>
+
+<p>When you log in, you are placed in your <strong>home directory.</strong></p>
+
+<ol>
+  <li>Try using <code class="highlighter-rouge">pwd</code>; it’ll show you the full path of your home directory.
+    <ul>
+      <li>Your home directory can be referred to as <code class="highlighter-rouge">~</code> in many commands as a typing shortcut.</li>
+    </ul>
+  </li>
+  <li>Try using <code class="highlighter-rouge">ls</code>. It will list the files and directories.
+    <ul>
+      <li>Your <code class="highlighter-rouge">private</code> directory is what you want to do your work in. No one else can see it.</li>
+    </ul>
+  </li>
+  <li>Do <code class="highlighter-rouge">cd private</code> and you’ll move into that directory.
+    <ul>
+      <li><code class="highlighter-rouge">pwd</code> again, and you’ll see that your directory changed.</li>
+      <li>You can use <code class="highlighter-rouge">cd ..</code> to move up one directory.</li>
+      <li>You can use <code class="highlighter-rouge">cd ~</code> to go to your home directory.</li>
+    </ul>
+  </li>
+</ol>
+
+<hr />
+
+<h2 id="3-setting-up-your-bash_profile-a-little-bit">3. Setting up your <code class="highlighter-rouge">~/.bash_profile</code> a little bit</h2>
+
+<p><code class="highlighter-rouge">bash</code> is what you’re using right now - the thing you type commands into. <code class="highlighter-rouge">.bash_profile</code> is the configuration file for <code class="highlighter-rouge">bash</code>.</p>
+
+<ol>
+  <li>Do <code class="highlighter-rouge">cd ~</code>.
+    <ul>
+      <li>This goes back to your home directory.</li>
+    </ul>
+  </li>
+  <li>Do <code class="highlighter-rouge">chmod u+rw .bash_profile</code></li>
+  <li>Now let’s edit it: <code class="highlighter-rouge">nano .bash_profile</code>
+    <ul>
+      <li><code class="highlighter-rouge">nano</code> is a very simplistic text editor that runs inside the terminal. The controls are at the bottom of the screen - something like <code class="highlighter-rouge">^X</code> means press <code class="highlighter-rouge">Ctrl+X</code>. (Mac users, use the actual control key.)</li>
+    </ul>
+  </li>
+  <li>Scroll down to the bottom of the file. There, you’ll see:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="c"># Define your own private shell functions and other commands here</span>
+</code></pre></div>    </div>
+  </li>
+  <li>Use the arrow keys to put your cursor after that line. Now, copy and paste this <strong>exactly:</strong>
+    <ul>
+      <li>In putty, you can right click and paste</li>
+      <li>In Terminal on a mac, ⌘V will paste</li>
+    </ul>
+
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="k">if</span> <span class="o">[</span> <span class="s2">"</span><span class="nv">$HOSTNAME</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"thoth.cs.pitt.edu"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then
+     </span><span class="nb">source</span> /opt/set_specific_profile.sh<span class="p">;</span>
+ <span class="k">fi</span>
+</code></pre></div>    </div>
+  </li>
+  <li>If you want a nice-looking terminal prompt like I have, find the line that starts with <code class="highlighter-rouge">export PS1</code>, and replace it with this:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nb">export </span><span class="nv">PS1</span><span class="o">=</span><span class="s2">"[</span><span class="se">\[\0</span><span class="s2">33[1;32m</span><span class="se">\]\h\[\0</span><span class="s2">33[0m</span><span class="se">\]</span><span class="s2"> </span><span class="se">\[\0</span><span class="s2">33[1;34m</span><span class="se">\]\w\[\0</span><span class="s2">33[0m</span><span class="se">\]</span><span class="s2">]: "</span><span class="p">;</span>
+</code></pre></div>    </div>
+  </li>
+  <li><strong>Now hit <code class="highlighter-rouge">Ctrl+O</code></strong> and hit enter to save. Then hit <code class="highlighter-rouge">Ctrl+X</code> to exit.</li>
+  <li>Do <code class="highlighter-rouge">source .bash_profile</code></li>
+  <li>
+    <p>Try doing <code class="highlighter-rouge">man open</code>. If you see this, yay! Hit <code class="highlighter-rouge">q</code> to exit.</p>
+
+    <p><img src="/teaching/classes/cs0449/labs/man_open.png" alt="" /></p>
+  </li>
+</ol>
+
+<p class="important">If you see <code class="highlighter-rouge">No manual entry for open</code> then you messed up somewhere. <strong>Ask for help!</strong></p>
+
+<hr />
+
+<h2 id="4-making-a-hello-world-program">4. Making a “hello world” program</h2>
+
+<p>Organization is good. Don’t just do all your work in <code class="highlighter-rouge">private</code>. Make a directory for your 449 work!</p>
+
+<ol>
+  <li>Make sure you are in your <code class="highlighter-rouge">private</code> directory. Then do <code class="highlighter-rouge">mkdir cs449</code>.</li>
+  <li>Do <code class="highlighter-rouge">ls</code>, and you should now see <code class="highlighter-rouge">cs449</code> listed. <code class="highlighter-rouge">cd</code> into <code class="highlighter-rouge">cs449</code>.</li>
+  <li>Now make a <code class="highlighter-rouge">lab1</code> directory inside your <code class="highlighter-rouge">cs449</code> directory, and <code class="highlighter-rouge">cd</code> into <em>that.</em></li>
+  <li>Let’s make a C file. Do <code class="highlighter-rouge">nano lab1.c</code>. This will create a new file and open it in <code class="highlighter-rouge">nano</code>.</li>
+  <li>Now <strong>type the following into the editor.</strong>
+    <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="c1">// Your Name (username)
+</span> <span class="cp">#include &lt;stdio.h&gt;
+</span>
+ <span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+     <span class="n">printf</span><span class="p">(</span><span class="s">"Hello World!</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+     <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+ <span class="p">}</span>
+</code></pre></div>    </div>
+  </li>
+  <li>Save the file and exit <code class="highlighter-rouge">nano</code>.</li>
+  <li>Now, compile it like so:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> gcc <span class="nt">--std</span><span class="o">=</span>c99 <span class="nt">-Wall</span> <span class="nt">-Werror</span> <span class="nt">-o</span> lab1 lab1.c
+</code></pre></div>    </div>
+
+    <p class="good-important">If you did it right, it should print nothing. With UNIX, “no news is good news.” Successful commands will usually be quiet. But if you <code class="highlighter-rouge">ls</code>, you should now see a new file, <code class="highlighter-rouge">lab1</code>. This is your executable!</p>
+  </li>
+  <li>Type <code class="highlighter-rouge">./lab1</code> to run your program. It should say “Hello, World!”</li>
+</ol>
+
+<hr />
+
+<h2 id="5-archives-and-submission">5. Archives and Submission</h2>
+
+<p>Your labs and projects will be submitted by copying (<code class="highlighter-rouge">cp</code>) files to a special directory.</p>
+
+<p class="good-important">Please follow these instructions for this and every lab/project you do. Bookmark this page!</p>
+
+<ol>
+  <li>Make sure your name and username are in a comment at the top of your <code class="highlighter-rouge">.c</code> file.</li>
+  <li><code class="highlighter-rouge">cd</code> into your <code class="highlighter-rouge">~/private/cs449</code> directory.</li>
+  <li>Make a copy of the <code class="highlighter-rouge">lab1</code> directory like so: <code class="highlighter-rouge">cp -r lab1/ lab1_copy/</code>
+    <ul>
+      <li>Making a copy reduces the chances of you losing all your work.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Make a <code class="highlighter-rouge">tar</code> archive. <code class="highlighter-rouge">tar</code> lets you bundle several files together.</p>
+
+    <p class="important">This is the step everyone messes up and loses their work on. Please be careful.</p>
+
+    <ul>
+      <li>
+        <p>Do this, <strong><em>using your username, not abc123.</em></strong></p>
+
+        <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">tar </span>cvf abc123_lab1.tar lab1/
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li>Check that the <code class="highlighter-rouge">tar</code> archive has the right files.
+    <ul>
+      <li>Do <strong><code class="highlighter-rouge">tar tvf abc123_lab1.tar</code></strong>. It should look something like…
+        <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="nv">$ </span><span class="nb">tar </span>tvf abc123_lab1.tar
+
+  drwxr-xr-x abc123/UNKNOWN1    0 2018-01-19 01:06 lab1/
+  <span class="nt">-rw-r--r--</span> abc123/UNKNOWN1   78 2018-01-19 00:54 lab1/lab1.c
+  <span class="nt">-rwxr-xr-x</span> abc123/UNKNOWN1 6424 2018-01-19 01:06 lab1/lab1
+</code></pre></div>        </div>
+      </li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">gzip</code> the tar file to compress it. It’s as easy as:
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nv">$ </span>gzip abc123_lab1.tar
+</code></pre></div>    </div>
+    <ul>
+      <li>Now it should have transformed into <code class="highlighter-rouge">abc123_lab1.tar.gz</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Finally, copy it to the submission directory.</strong>
+    <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nv">$ </span>cp abc123_lab1.tar.gz ~jfb42/submit/449
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>It will say nothing if it worked correctly. No news is good news! But if you’re unsure, you can double-check that you submitted it properly like so:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">ls</span> ~jfb42/submit/449/abc123_lab1.tar.gz
+</code></pre></div></div>
+
+<p>and done correctly, it’ll show your filename:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/afs/pitt.edu/home/j/f/jfb42/submit/449/abc123_lab1.tar.gz
+</code></pre></div></div>
+
+<p class="note-important">If you messed up and need to submit again, then fix your mistake, repeat these steps, but <strong>rename your <code class="highlighter-rouge">tar</code> file to <code class="highlighter-rouge">abc123_lab1_2.tar.gz</code> before copying it to the submission directory.</strong></p>
+
+<p>If you mess up again, repeat, name it <code class="highlighter-rouge">abc123_lab1_3.tar.gz</code>, copy.</p>
+
+<p>If you mess up again, repeat, name it <code class="highlighter-rouge">abc123_lab1_4.tar.gz</code>, copy.</p>
+
+<p>If you mess up again, repeat, name it <code class="highlighter-rouge">abc123_lab1_5.tar.gz</code>, copy.</p>
+
+<p>If you…. ok I think you get the idea.</p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
