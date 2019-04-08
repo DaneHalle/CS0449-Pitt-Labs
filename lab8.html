@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Lab 8: Basic multithreading</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/labs/lab8.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Lab 8: Basic multithreading
+		
+	</h1>
+
+	
+		<h3>
+			Due by midnight, Saturday 4/13
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<h2 id="getting-started">Getting started</h2>
+
+<p><a href="/teaching/classes/cs0449/labs/lab8.c">Right click and download this link.</a> This is the skeleton of your lab.</p>
+
+<hr />
+
+<h2 id="what-it-will-do">What it will do</h2>
+
+<p>A common use for multiple threads is to <strong>do something that takes a long time on a second thread,</strong> so that the main thread can continue working.</p>
+
+<p>This program supports 3 commands:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">exit</code> - exits the main thread.</li>
+  <li><code class="highlighter-rouge">status</code> - shows how many alarm threads are pending.</li>
+  <li><code class="highlighter-rouge">alarm n</code> - sets an alarm for <code class="highlighter-rouge">n</code> seconds from now.
+    <ul>
+      <li>when the alarm goes off, it prints a message.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>This seems like a silly program, but the way it works is <em>exactly</em> how more complex programs work. Once you learn this pattern, you can apply it to many other kinds of problems, like:</p>
+
+<ul>
+  <li>doing complicated calculations in the background</li>
+  <li>downloading files in the background</li>
+  <li>periodically reminding the user of something</li>
+  <li>pretty much any long-running task in a GUI application</li>
+</ul>
+
+<p>Here is an example interaction with the program:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./lab8
+&gt; status
+	0 alarm(s) pending.
+&gt; alarm 5
+&gt; alarm 8
+&gt; status
+	2 alarm(s) pending.
+&gt; (RING RING!) status
+	1 alarm(s) pending.
+&gt; sta(RING RING!)tus
+	0 alarm(s) pending.
+&gt; alarm 3
+&gt; exit
+	still 1 alarm(s) pending...
+(RING RING!) $
+</code></pre></div></div>
+
+<p>Above, you can see it act kind of funny… the <code class="highlighter-rouge">(RING RING!)</code> are the alarms going off. Sometimes, they go off <em>in the middle of the user typing something.</em> Yep! That’s the point! :D</p>
+
+<hr />
+
+<h2 id="what-to-do">What to do</h2>
+
+<p>Compile it like so: <code class="highlighter-rouge">gcc -lpthread -Wall -Werror --std=c99 -o lab8 lab8.c</code></p>
+
+<p class="important">Don’t forget the <code class="highlighter-rouge">-lpthread</code> gcc flag!</p>
+
+<p>If you compile and run it right now, it won’t do much. <strong>The functions you have to implement are at the bottom.</strong> See below for details.</p>
+
+<ul>
+  <li>Refer to the threading examples I gave in class on the examples page, particularly <code class="highlighter-rouge">21_thread_test.c</code>.</li>
+  <li>Some of the functions really are “that easy” and only take a couple lines of code.</li>
+  <li>If you are only <em>reading</em> a shared global variable, technically you don’t have to lock its mutex…</li>
+  <li>You can print out the <code class="highlighter-rouge">\a</code> escape character to make your console go “ding” :)</li>
+</ul>
+
+<p class="good-important"><strong>Don’t do everything at once.</strong> Implement and test each function below in the order given.</p>
+
+<ul>
+  <li><code class="highlighter-rouge">exit_main_thread()</code> - for the <code class="highlighter-rouge">exit</code> command
+    <ul>
+      <li>If there are any threads running, it should say <strong>how many there are left.</strong></li>
+      <li>Then you can <em>safely</em> exit the main thread with <code class="highlighter-rouge">pthread_exit()</code>. Look it up!
+        <ul>
+          <li>When you use this, the other threads will keep running.</li>
+          <li>If there are no other threads running, then this behaves like normal <code class="highlighter-rouge">exit()</code>.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">show_status()</code> - for the <code class="highlighter-rouge">status</code> command
+    <ul>
+      <li>This should show how many alarm threads are running.</li>
+      <li>I gave you the <code class="highlighter-rouge">num_threads</code> variable to count them.</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">change_thread_counter(int delta)</code>
+    <ul>
+      <li>Read the comment.</li>
+      <li>This should properly lock/unlock the mutex around its code.</li>
+      <li>See <code class="highlighter-rouge">22_thread_cooperating.c</code> in the examples.</li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">set_alarm(long duration)</code> - for the <code class="highlighter-rouge">alarm</code> command
+    <ul>
+      <li>Read the comments.</li>
+      <li>Write a new function to serve as the thread’s main function.
+        <ul>
+          <li>See <code class="highlighter-rouge">21_thread_test.c</code> to see how we “sneak” an integer into the thread’s main function.</li>
+        </ul>
+      </li>
+      <li>The thread’s main function should:
+        <ol>
+          <li><code class="highlighter-rouge">sleep()</code></li>
+          <li>print a message
+            <ul>
+              <li>use <code class="highlighter-rouge">fflush(stdout)</code> after printing, if you don’t use <code class="highlighter-rouge">\n</code>!</li>
+            </ul>
+          </li>
+          <li>decrement the number of threads using <code class="highlighter-rouge">change_thread_counter</code></li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="submission">Submission</h2>
+
+<p class="important">Please remove all the comments I put in the file before you submit.</p>
+
+<p><a href="lab1.html#5-archives-and-submission">Then submit as usual.</a></p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
