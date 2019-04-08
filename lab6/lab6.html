@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Lab 6: Dynamic loading</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/labs/lab6.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Lab 6: Dynamic loading
+		
+	</h1>
+
+	
+		<h3>
+			Due by midnight, Saturday 3/23
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<p>In this lab, you’ll be writing a <strong>simple file compression/decompression utility.</strong> No, you’re not writing a compression algorithm!! Instead, you’ll dynamically load <a href="https://zlib.net/">zlib</a> to do the compression and decompression for you.</p>
+
+<p>This lab is a little more hands-off. I’m giving you a goal and some tools, and I wanna see how well you can put them together into a functioning program.</p>
+
+<p class="important"><a href="https://zlib.net/manual.html#Utility">Refer to the official zlib documentation for the three functions you’ll be using.</a></p>
+
+<hr />
+
+<h2 id="getting-started">Getting started</h2>
+
+<p>First get a little test file from me:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>cp /afs/pitt.edu/home/j/f/jfb42/public/html/img1.bmp <span class="nb">.</span>
+</code></pre></div></div>
+
+<p>Then, here’s how your program should work:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./lab6 <span class="nt">-c</span> img1.bmp <span class="o">&gt;</span> compressedimg1
+<span class="nv">$ </span>./lab6 <span class="nt">-d</span> compressedimg1 <span class="o">&gt;</span> img2.bmp
+</code></pre></div></div>
+
+<p class="aside">You can use <code class="highlighter-rouge">ls -l</code> to see the size of the files in bytes. The original and final image files should be 1179702 bytes. The compressed file should be 995320 bytes.</p>
+
+<p>The first command compresses <code class="highlighter-rouge">img1.bmp</code> into the <code class="highlighter-rouge">compressedimg1</code> file. The second decompresses that file into <code class="highlighter-rouge">img2.bmp</code>.</p>
+
+<p>After those two commands, <code class="highlighter-rouge">img1.bmp</code> and <code class="highlighter-rouge">img2.bmp</code> should be identical - in contents and length.</p>
+
+<hr />
+
+<h2 id="your-program">Your program</h2>
+
+<p>Here is a description of how your program will work. <strong>Remember to start writing your code from the top down.</strong> Stub out some functions for doing these things and call them from main.</p>
+
+<ul>
+  <li>if <code class="highlighter-rouge">argc</code> &lt; 3, complain and exit.</li>
+  <li><a href="#how-to-do-dynamic-loading-on-unix">load the <code class="highlighter-rouge">zlib</code> library.</a></li>
+  <li><a href="#loading-zlib-and-the-needed-functions">extract the 3 functions you need.</a></li>
+  <li>open file <code class="highlighter-rouge">argv[2]</code> for <strong>binary reading</strong>.</li>
+  <li>if <code class="highlighter-rouge">argv[1]</code> is “-c”
+    <ul>
+      <li><a href="#how-big-is-a-file">read the entire file</a> into an <strong>input buffer</strong> that you <code class="highlighter-rouge">malloc</code></li>
+      <li><code class="highlighter-rouge">malloc</code> a <strong>output buffer</strong> using <code class="highlighter-rouge">compressBound</code> to figure out what size it should be</li>
+      <li><a href="#using-the-zlib-compress-and-uncompress-functions">use <code class="highlighter-rouge">compress()</code> to compress the input buffer into the output buffer.</a></li>
+      <li><code class="highlighter-rouge">fwrite</code> three things to <code class="highlighter-rouge">stdout</code>:
+        <ul>
+          <li>the <strong>uncompressed size</strong> (as an <code class="highlighter-rouge">unsigned long</code>)</li>
+          <li>the <strong>actual compressed size</strong> (as an <code class="highlighter-rouge">unsigned long</code>)</li>
+          <li>the <strong>output buffer</strong></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>else if <code class="highlighter-rouge">argv[1]</code> is “-d”
+    <ul>
+      <li><code class="highlighter-rouge">fread</code> two things:
+        <ul>
+          <li>the <strong>uncompressed size</strong></li>
+          <li>the <strong>compressed size</strong></li>
+        </ul>
+      </li>
+      <li><code class="highlighter-rouge">malloc</code> an <strong>input buffer</strong> big enough to hold the compressed data</li>
+      <li><code class="highlighter-rouge">fread</code> the rest of the data into that buffer (using the compressed size)</li>
+      <li><code class="highlighter-rouge">malloc</code> an <strong>output buffer</strong> big enough to hold the uncompressed data (using the uncompressed size)</li>
+      <li><a href="#using-the-zlib-compress-and-uncompress-functions">use <code class="highlighter-rouge">uncompress()</code> to decompress the input buffer into the output buffer</a></li>
+      <li><code class="highlighter-rouge">fwrite</code> the output buffer to <code class="highlighter-rouge">stdout</code></li>
+    </ul>
+  </li>
+  <li>else, complain and exit.</li>
+</ul>
+
+<p class="important">Your program should be fairly robust. It should <strong>give an error message and then exit</strong> in the following situations:</p>
+
+<ul>
+  <li>too few program arguments</li>
+  <li>invalid <code class="highlighter-rouge">argv[1]</code> (neither “-c” nor “-d”)</li>
+  <li>couldn’t open the input file</li>
+  <li>couldn’t open <code class="highlighter-rouge">libz.so</code></li>
+  <li>couldn’t get one or more of the symbols from zlib</li>
+  <li><code class="highlighter-rouge">compress</code> or <code class="highlighter-rouge">uncompress</code> failed (returned a negative number)</li>
+</ul>
+
+<hr />
+
+<h2 id="how-to-do-dynamic-loading-on-unix">How to do dynamic loading on UNIX</h2>
+
+<p class="important">This is an example. Don’t copy and paste the code into your program. Come on.</p>
+
+<p><code class="highlighter-rouge">#include &lt;dlfcn.h&gt;</code> in your program.</p>
+
+<p>When you compile, give gcc the <code class="highlighter-rouge">-ldl</code> (that’s lowercase LDL) flag, like <code class="highlighter-rouge">gcc -o lab6 -ldl abc123_lab6.c</code>.</p>
+
+<p>To dynamically load a library:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span><span class="o">*</span> <span class="n">lib</span> <span class="o">=</span> <span class="n">dlopen</span><span class="p">(</span><span class="n">library_file_name</span><span class="p">,</span> <span class="n">RTLD_NOW</span><span class="p">);</span>
+
+<span class="k">if</span><span class="p">(</span><span class="n">lib</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// couldn't load the library!
+</span>    <span class="c1">// give an error and exit.
+</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p>Then, to extract symbols from it, use <code class="highlighter-rouge">dlsym</code>:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">brand_new_function</span><span class="p">)()</span> <span class="o">=</span> <span class="n">dlsym</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="s">"brand_new_function"</span><span class="p">);</span>
+
+<span class="k">if</span><span class="p">(</span><span class="n">brand_new_function</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// couldn't load the symbol!
+</span>    <span class="c1">// give an error and exit.
+</span><span class="p">}</span>
+</code></pre></div></div>
+
+<p class="important">Be sure to check the return values of <code class="highlighter-rouge">dlopen/dlsym</code> as shown above. Otherwise you’ll start getting segfaults and not know why.</p>
+
+<hr />
+
+<h2 id="loading-zlib-and-the-needed-functions">Loading <code class="highlighter-rouge">zlib</code> and the needed functions</h2>
+
+<p>On thoth, <code class="highlighter-rouge">zlib</code> is already installed. It’s named <code class="highlighter-rouge">"libz.so"</code>, so use that as the first argument to <code class="highlighter-rouge">dlopen</code>.</p>
+
+<p class="aside">You can make these global variables in your program. This <strong>is</strong> actually a legitimate use for globals!</p>
+
+<p>The three functions you need to extract are the following:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">unsigned</span> <span class="kt">long</span> <span class="p">(</span><span class="o">*</span><span class="n">compressBound</span><span class="p">)(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">length</span><span class="p">);</span>
+<span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">compress</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">dest</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span><span class="o">*</span> <span class="n">destLen</span><span class="p">,</span>
+		<span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">source</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">sourceLen</span><span class="p">);</span>
+<span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">uncompress</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">dest</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span><span class="o">*</span> <span class="n">destLen</span><span class="p">,</span>
+		<span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">source</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">sourceLen</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>For example, to load <code class="highlighter-rouge">compressBound</code>,</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">compressBound</span> <span class="o">=</span> <span class="n">dlsym</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="s">"compressBound"</span><span class="p">);</span>
+
+<span class="k">if</span><span class="p">(</span><span class="n">compressBound</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// uh oh...
+</span><span class="p">}</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="how-big-is-a-file">How big is a file?</h2>
+
+<p>If you’ve opened a file, and you want to see how many bytes it is, it’s simple:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">fseek</code> to the end of the file</li>
+  <li>use <code class="highlighter-rouge">ftell</code> to get the current position into an <code class="highlighter-rouge">unsigned long</code> variable
+    <ul>
+      <li><strong>this is the size!</strong></li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">fseek</code> back to the beginning of the file</li>
+</ul>
+
+<hr />
+
+<h2 id="using-the-zlib-compress-and-uncompress-functions">Using the zlib <code class="highlighter-rouge">compress</code> and <code class="highlighter-rouge">uncompress</code> functions</h2>
+
+<p>Both functions have the same sort of prototype. Let’s look at <code class="highlighter-rouge">compress</code> for now:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">compress</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">dest</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span><span class="o">*</span> <span class="n">destLen</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">source</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">sourceLen</span><span class="p">);</span>
+</code></pre></div></div>
+
+<ul>
+  <li><code class="highlighter-rouge">dest</code> is the destination buffer, where the compressed data will go.</li>
+  <li><code class="highlighter-rouge">destLen</code> is the length of the destination buffer, but notice, <strong>it’s a pointer.</strong>
+    <ul>
+      <li>when you call <code class="highlighter-rouge">compress</code>, give it the address of the length of your buffer.</li>
+      <li>that will tell <code class="highlighter-rouge">compress</code> how big the destination buffer is.</li>
+      <li>then, <code class="highlighter-rouge">compress</code> will <strong>change the value of your buffer length variable.</strong>
+        <ul>
+          <li>why does it do this?</li>
+          <li>cause it doesn’t know exactly how big the compressed data will be!</li>
+        </ul>
+      </li>
+      <li>so after <code class="highlighter-rouge">compress</code> returns, your variable now contains the “correct” compressed size.
+        <ul>
+          <li>you can now write it out.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><code class="highlighter-rouge">source</code> is the uncompressed buffer.</li>
+  <li><code class="highlighter-rouge">sourceLen</code> is the size of the uncompressed buffer.</li>
+</ul>
+
+<p><code class="highlighter-rouge">uncompress</code> works virtually identically, except swap the words “compressed” and “uncompressed.” :P</p>
+
+<hr />
+
+<h2 id="using-freadfwrite-with-single-variables">Using <code class="highlighter-rouge">fread/fwrite</code> with single variables</h2>
+
+<p>You can think of a single variable as an array of length 1. So…</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">myvar</span> <span class="o">=</span> <span class="p">...;</span>
+<span class="n">fwrite</span><span class="p">(</span><span class="o">&amp;</span><span class="n">myvar</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">myvar</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">myfile</span><span class="p">);</span>
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="submission">Submission</h2>
+
+<p class="important">Make sure you implemented error checking as detailed above!</p>
+
+<p><a href="lab1.html#5-archives-and-submission">Then submit as usual.</a></p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
