@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Lab 4: gdb</title>
+	<meta name="description" content="It&#39;s me">
+
+	<link rel="stylesheet" href="/teaching/assets/main.css">
+	<link rel="canonical" href="/teaching/classes/cs0449/labs/lab4.html">
+	<link rel="shortcut icon" href="/teaching/assets/favicon.ico">
+
+
+	<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+</head>
+
+
+  <body>
+    <header class="site-header" role="banner">
+	<h1>
+		
+			<a href=" /teaching/classes/cs0449/assignments">⬅</a>
+		
+		
+			Lab 4: gdb
+		
+	</h1>
+
+	
+		<h3>
+			Finish by ... whenever
+		</h3>
+	
+</header>
+
+
+
+    <main class="page-content" aria-label="Content">
+      
+<h2 id="debugging">Debugging</h2>
+
+<div class="aside">
+  <p><img src="/teaching/classes/cs0449/labs/apple_bullet.png" alt="" /></p>
+
+  <p>Oh, that’s what happened.</p>
+</div>
+
+<p><strong>Debugging</strong> is the process of figuring out <em>why</em> your program is broken. Not only do you fix your bugs, but you also get a deeper understanding about why your program is incorrect. Then you can avoid those mistakes in the future.</p>
+
+<p>A <strong>debugger</strong> is a tool to help with this process. If your program fails, a debugger lets you watch it fail step-by-step, so that you can figure out what went wrong, and when. I love this quote: “a debugger lets you watch your program crash in slow motion.”</p>
+
+<p><strong><code class="highlighter-rouge">printf</code> debugging</strong> is probably all you’ve used so far: you stick a bunch of prints into your code to print out the values of variables, or to say <code class="highlighter-rouge">"got here"</code>. You can get pretty far with this, but it’s tedious.</p>
+
+<h2 id="whats-gdb">What’s <code class="highlighter-rouge">gdb</code>?</h2>
+
+<p><code class="highlighter-rouge">gdb</code> is the GNU debugger. It’s, uh, a little difficult to use, but really powerful. Like most things that the GNU people make.</p>
+
+<h2 id="how-does-a-debugger-work">How does a debugger work?</h2>
+
+<p>A debugger is a sort of “supervisor.” It has full control of your program: it can pause, resume, run it step-by-step, look at all the variables, <em>change</em> all the variables, etc.</p>
+
+<p>Probably the most important thing a debugger can do is <strong>pause</strong> with something called a <strong>breakpoint.</strong> A breakpoint is a way of telling the debugger, “when my program gets to this line, stop!”</p>
+
+<p>Once the program is paused, you can look at everything, see where you are, see what went wrong, and so on. It’s like stopping time.</p>
+
+<hr />
+
+<h2 id="1-things-are-bad">1. Things are bad!</h2>
+
+<p>Login to thoth and <code class="highlighter-rouge">cd</code> into your private directory. Make a directory for this lab, and in there (Don’t forget the period at the end!):</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cp ~jfb42/public/cs449/gdbdemo.c .
+</code></pre></div></div>
+
+<p>Take a look at the contents of <code class="highlighter-rouge">gdbdemo.c</code> There are some mistakes in there. Don’t fix them yet!</p>
+
+<p>Compile it and run it to see the result:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(23) thoth $ gcc -o gdbdemo gdbdemo.c
+gdbdemo.c: In function ‘less_fun’:
+gdbdemo.c:31: warning: initialization makes pointer from integer without a cast
+
+(24) thoth $ ./gdbdemo
+Enter a number: 3
+Segmentation fault (core dumped)
+</code></pre></div></div>
+
+<p>Unlike in a Java program, when our program crashes, we don’t get a nice printout showing exactly where the error happened. Why?</p>
+
+<p>When we compile an executable, most of the “squishy human” things like variable names, function names, references to the C source code etc. are thrown away. The CPU doesn’t need or care about them, and they would just waste space in the executable file.</p>
+
+<p>But we can tell <code class="highlighter-rouge">gcc</code> to include that information with the <code class="highlighter-rouge">-g</code> flag. So do that:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(25) thoth $ gcc -g -o gdbdemo gdbdemo.c
+gdbdemo.c: In function ‘less_fun’:
+gdbdemo.c:31: warning: initialization makes pointer from integer without a cast
+</code></pre></div></div>
+
+<hr />
+
+<h2 id="2-running-it-in-gdb">2. Running it in <code class="highlighter-rouge">gdb</code></h2>
+
+<p>Now we can run our program through <code class="highlighter-rouge">gdb</code>. Since it’s a supervisor, we tell it what program to run:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">(</span>26<span class="o">)</span> thoth <span class="nv">$ </span>gdb gdbdemo
+GNU gdb <span class="o">(</span>GDB<span class="o">)</span> Red Hat Enterprise Linux <span class="o">(</span>7.2-64.el6_5.2<span class="o">)</span>
+...blah blah blah...
+Reading symbols from /afs/pitt.edu/home/j/f/jfb42/public/cs449/gdbdemo...done.
+<span class="o">(</span>gdb<span class="o">)</span> _
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">gdb</code> is an interactive program with its own prompt where you type commands.</p>
+
+<p class="note-important">When you start gdb like this, it does not run your program. You have to run it with the <code class="highlighter-rouge">run</code> command (or just <code class="highlighter-rouge">r</code> for short).</p>
+
+<p>When we run the program, it asks for a number again, and we type it, and…</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) r
+Starting program: /afs/pitt.edu/home/j/f/jfb42/public/cs449/gdbdemo
+Enter a number: 3
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00000034ff656f50 in _IO_vfscanf_internal () from /lib64/libc.so.6
+Missing separate debuginfos, use: debuginfo-install glibc-2.12-1.132.el6_5.3.x86_64
+(gdb) _
+</code></pre></div></div>
+
+<p class="aside">You can ignore the “Missing separate debuginfos” message.</p>
+
+<p><code class="highlighter-rouge">gdb</code> automatically pauses our program right as it crashes, so we can see what went wrong. But where are we? What the heck is <code class="highlighter-rouge">_IO_vfscanf_internal</code>?</p>
+
+<p>Let’s get a <strong>stack trace.</strong> This shows the list of activation records on the stack, and the line where that function is running (or waiting for another function to return).</p>
+
+<p>Use the <code class="highlighter-rouge">where</code> or <code class="highlighter-rouge">bt</code> command:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) where
+#0  0x00000034ff656f50 in _IO_vfscanf_internal () from /lib64/libc.so.6
+#1  0x00000034ff664daa in __isoc99_vsscanf () from /lib64/libc.so.6
+#2  0x00000034ff664d28 in __isoc99_sscanf () from /lib64/libc.so.6
+#3  0x0000000000400605 in main () at gdbdemo.c:11
+</code></pre></div></div>
+
+<p>We can see some kind of internal functions from <code class="highlighter-rouge">libc.so.6</code>, and we can ignore those. The important line here is:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>#3  0x0000000000400605 in main () at gdbdemo.c:11
+</code></pre></div></div>
+
+<p>That says whatever is on line 11 of <code class="highlighter-rouge">gdbdemo.c</code> is what crashed. So let’s have a look at that using the <code class="highlighter-rouge">list</code> command:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) list gdbdemo.c:11
+6		int x;
+7		char buf[30];
+8
+9		printf("Enter a number: ");
+10		fgets(buf, sizeof(buf), stdin);
+11		sscanf(buf, "%d", x);
+12
+13		fun();
+14
+15		return 0;
+</code></pre></div></div>
+
+<p>Wait a second. The <code class="highlighter-rouge">scanf</code> functions expect <em>addresses</em> for their arguments. We should have written <code class="highlighter-rouge">&amp;x</code>.</p>
+
+<p>Quit <code class="highlighter-rouge">gdb</code> with the <code class="highlighter-rouge">quit</code> or <code class="highlighter-rouge">q</code> command and say yes, exit.</p>
+
+<p>Then you can fix that mistake, recompile, and run it again.</p>
+
+<hr />
+
+<h2 id="3-things-are-still-bad-oh-no">3. THINGS ARE STILL BAD OH NO</h2>
+
+<p>Now you can type in a number successfully, but you get another error, a SIGFPE:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Enter a number: 34
+
+Program received signal SIGFPE, Arithmetic exception.
+0x000000000040068f in fun () at gdbdemo.c:24
+24		int c = a / b;
+</code></pre></div></div>
+
+<p>This time it even shows the line of code that crashed. A division! What kind of thing could happen during a division that causes an exception? (HMMMMMM)</p>
+
+<p>We can print out all the local variables of <code class="highlighter-rouge">fun</code> with <code class="highlighter-rouge">info locals</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) info locals
+a = 5
+b = 0
+c = 52
+</code></pre></div></div>
+
+<p>Well well well. <code class="highlighter-rouge">b</code> is 0. We can’t divide by 0 now can we?</p>
+
+<p>Exit gdb, fix the code (change <code class="highlighter-rouge">b</code> to something else), recompile, and rerun.</p>
+
+<hr />
+
+<h2 id="4-why-wont-things-get-better">4. why won’t things get better</h2>
+
+<p>Now we’re crashing on this line:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Program received signal SIGSEGV, Segmentation fault.
+0x00000000004006e5 in less_fun () at gdbdemo.c:33
+33			printf("*q = %d\n", *q);
+</code></pre></div></div>
+
+<p>Let’s print out the locals again.</p>
+
+<p class="aside">Notice – this pointer is definitely not NULL, but it crashes anyway, since it’s definitely not valid.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) info locals
+p = 0x601010
+q = 0x2d
+</code></pre></div></div>
+
+<p>Uh. Ok. That’s weird. <code class="highlighter-rouge">q</code> doesn’t look like a proper pointer value.</p>
+
+<p>Let’s watch <code class="highlighter-rouge">less_fun</code> crash in slow motion. We can do this by setting a <strong>breakpoint</strong> on it. This tells <code class="highlighter-rouge">gdb</code> “pause right before you this thing gets executed.”</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) break less_fun
+Breakpoint 1 at 0x4006b6: file gdbdemo.c, line 29.
+</code></pre></div></div>
+
+<p>Now we can <strong>restart</strong> the program with the <code class="highlighter-rouge">r</code> (<code class="highlighter-rouge">run</code>) command again.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) r
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /afs/pitt.edu/home/j/f/jfb42/public/cs449/gdbdemo
+Enter a number: 3
+Result is 5
+
+Breakpoint 1, less_fun () at gdbdemo.c:29
+29		int* p = malloc(sizeof(int));
+</code></pre></div></div>
+
+<p>Okay. It says we’re on the <code class="highlighter-rouge">malloc</code> line, which means <strong>that is the line about to be run.</strong> It hasn’t run yet.</p>
+
+<p>We can use the <code class="highlighter-rouge">n</code> (<code class="highlighter-rouge">next</code>) command to run to the next couple lines.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) n
+30		*p = 45;
+(gdb) n
+31		int* q = *p;
+</code></pre></div></div>
+
+<p>Okay. Now <code class="highlighter-rouge">p</code> has been assigned, and so has <code class="highlighter-rouge">*p</code>. Let’s print those out with… <code class="highlighter-rouge">print</code>!</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) print p
+$1 = (int *) 0x601010
+(gdb) print *p
+$2 = 45
+</code></pre></div></div>
+
+<p>You can use any C expression with <code class="highlighter-rouge">print</code>. For example I could even write this:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) print p[0]
+$3 = 45
+</code></pre></div></div>
+
+<p>Hey, it’s the same thing as <code class="highlighter-rouge">*(p + 0)</code>, right?</p>
+
+<p>Back on track. Let’s use <code class="highlighter-rouge">n</code> to run the <code class="highlighter-rouge">int* q = *p;</code> line. Then, let’s print <code class="highlighter-rouge">q</code>.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) n
+32		if(q != NULL) {
+(gdb) print q
+$4 = (int *) 0x2d
+</code></pre></div></div>
+
+<p>Uh… okay. Wait. <code class="highlighter-rouge">0x2d</code>. What is that in decimal? We can use <code class="highlighter-rouge">print/d</code> to print it in decimal.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(gdb) print/d q
+$6 = 45
+</code></pre></div></div>
+
+<p>Oh!!!!!!!! 45. 45 is the value we put in <code class="highlighter-rouge">*p</code>. Ohhhh that’s what that compiler warning was about “makes pointer from integer” blah blah ohhhh okay. Okay. <em>Okay.</em></p>
+
+<p>Now you know what’s wrong, and you can fix that bug. And there are no more!</p>
+
+<hr />
+
+<h2 id="common-commands">Common commands</h2>
+
+<p>Now you can play with <code class="highlighter-rouge">gdb</code> some more. Try it on your previous labs, or debug your project 1 if you couldn’t fix something!</p>
+
+<p>You can learn more about all of the commands by typing <code class="highlighter-rouge">help</code>, or on a specific command by typing <code class="highlighter-rouge">help command_name</code> e.g. <code class="highlighter-rouge">help bt</code></p>
+
+<table class="fancy">
+  <thead>
+    <tr>
+      <th style="text-align: left">Command</th>
+      <th style="text-align: left">Shortcut</th>
+      <th style="text-align: left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">help</code></td>
+      <td style="text-align: left"> </td>
+      <td style="text-align: left">Get help on a command or topic</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">apropos</code></td>
+      <td style="text-align: left"> </td>
+      <td style="text-align: left">Search the help for a term</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">set args</code></td>
+      <td style="text-align: left"> </td>
+      <td style="text-align: left">Set command-line arguments</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">run</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">r</code></td>
+      <td style="text-align: left">Run (or restart) a program</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">quit</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">q</code></td>
+      <td style="text-align: left">Exit gdb</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">break</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">b</code></td>
+      <td style="text-align: left">Place a breakpoint at a given location</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">continue</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">c</code></td>
+      <td style="text-align: left">Continue running the program after pausing</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">backtrace</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">bt, back</code></td>
+      <td style="text-align: left">Show the function call stack</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">where</code></td>
+      <td style="text-align: left"> </td>
+      <td style="text-align: left">Same as <code class="highlighter-rouge">backtrace</code></td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">next</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">n</code></td>
+      <td style="text-align: left">Go to next line of source code (doesn’t follow calls)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">step</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">s</code></td>
+      <td style="text-align: left">Go to next line of source code (follows calls)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">nexti</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">ni</code></td>
+      <td style="text-align: left">Go to the next instruction (doesn’t follow calls)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">stepi</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">si</code></td>
+      <td style="text-align: left">Go to the next instruction (follows calls)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">print</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">p</code></td>
+      <td style="text-align: left">Print the value of an expression written in C notation</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">x</code></td>
+      <td style="text-align: left"> </td>
+      <td style="text-align: left">Examine the contents of a memory location (pointer)</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">list</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">l</code></td>
+      <td style="text-align: left">List the source code of the program</td>
+    </tr>
+    <tr>
+      <td style="text-align: left"><code class="highlighter-rouge">disassemble</code></td>
+      <td style="text-align: left"><code class="highlighter-rouge">disas</code></td>
+      <td style="text-align: left">List the machine code of the program</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="important-takeaways">Important takeaways</h2>
+
+<ul>
+  <li>If your program crashes, your <em>first instinct</em> should be to run it in <code class="highlighter-rouge">gdb</code> to find out where it’s crashing.
+    <ul>
+      <li><strong>DON’T GUESS WHERE YOUR PROGRAM IS CRASHING.</strong></li>
+      <li>Often it’s not where you think.</li>
+    </ul>
+  </li>
+  <li>If you’ve checked a pointer for NULL, that’s not necessarily a guarantee that it’s valid.</li>
+  <li>If you come to us without having debugged your programs…
+    <ul>
+      <li>we will tell you to debug it and come back if you’re totally stuck.</li>
+    </ul>
+  </li>
+</ul>
+
+<hr />
+
+<h2 id="what-to-turn-in">What to turn in</h2>
+
+<p>Nothing! This lab is for practice only. Believe me, you’ll need to use the debugger when working on your memory allocator.</p>
+
+    </main>
+
+    <footer class="site-footer">
+	&copy; 2016-2019 Jarrett Billingsley
+</footer>
+
+<script>
+	// From https://gist.github.com/SimplGy/a229d25cdb19d7f21231
+	// Thanks Eric!
+	(function(){
+		'use strict';
+		var headingNodes = [], results, link,
+				tags = ['h2', 'h3', 'h4', 'h5', 'h6'];
+
+		tags.forEach(function(tag){
+			results = document.getElementsByTagName(tag);
+			Array.prototype.push.apply(headingNodes, results);
+		});
+
+		headingNodes.forEach(function(node){
+			link = document.createElement('a');
+			link.className = 'section-link';
+			link.textContent = ' ¶';
+			link.href = '#' + node.getAttribute('id');
+			node.appendChild(link);
+		});
+	})();
+</script>
+  </body>
+</html>
